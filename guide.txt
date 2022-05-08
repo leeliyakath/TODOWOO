@@ -1,0 +1,316 @@
+				TODO WEBSITE-
+
+create a project-
+	django-admin startproject nameoftheproject
+
+create an app
+	python manage.py startapp appname
+
+
+SIGN UP -----
+	add an url for sign-up
+		path('signup/', views.signupuser, name='signupuser'),
+
+
+CREATE A FUNCTION IN APP views.py
+
+
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.db import IntegrityError
+
+
+
+	def signupuser(request):
+    if request.method == 'GET':
+# if someone adds that url its a GET method so we just render the sign up page to them
+        return render(request, 'todo/signupuser.html', {'form': UserCreationForm()})
+    else:
+        if request.POST['password1'] == request.POST['password2']:
+# 5 we have two passowrds sections in the sign up page hence they have to match inorder for us to create user and login
+            try:
+                user = User.objects.create_user(request.POST['username'], password=request.POST['password1']) # either of the passwords key can be used
+# 1 User.objects.create_user(request.POST['username'] ~ that creates a user name and password=request.POST['password1'] ~ creates password what ever is entered in the
+# fields username and password1 are taken by inspecting the url itself
+                user.save()
+# 2 username and passowrd is saved in the db
+                login(request, user)
+# 3 we login the user by passing in request and user variable to the login method. user has specific username and password
+                return redirect(currenttodos)
+# 4 after logging in the request and user(username and password) we have to render the login page or get the user into the website.
+# we have to create currenttodos page for the user to login
+            except IntegrityError:
+# 6 IntegrityError helps us to create a unique user it checks if the username entered is unique or exists in our db if it does we render the sign up page with an error
+# dictionary which will be printed in html if the user trigers IntegrityError. when using such errors we need to use try and except
+                return render(request, 'todo/signupuser.html',
+                              {'form': UserCreationForm(), 'error': 'username has already been taken, please enter a unique username'})
+
+        else:
+            # passwords didn't match
+            return render(request, 'todo/signupuser.html', {'form': UserCreationForm(), 'error': 'Passwords entered did not match'})
+            # error dictionary i have created could be anything not just error
+
+# 7 if the password dont match we render the same page with an error dict just like above IntegrityError
+
+
+
+{% extends 'todo/base.html' %}
+{% block content %}
+
+<h1>Sign Up</h1>
+
+<h2>{{ error }}</h2>
+
+<form method="POST">
+    {% csrf_token %}
+{{ form.as_p }}
+<button type="submit">Sign Up</button>
+</form>
+
+{% endblock %}
+
+# 1 extends is extending html content from another html ignore that part not so important
+# 2 we print the error as h2 which means if any of those dict errors are trigerred they print here.
+# we want to save username and password to sign up hence we're using POST which is used in function if only the method is POST
+# it executes the sign in option. we need the csrf token for security reasons when ever POST method is used.
+# 3 {{ form.as_p }} ~ this prints the username and passwords on the page
+# 4 <button type="submit">Sign Up</button> ~ this is a submit button to save the data
+
+CREATE LOGGIN PAGE
+URL
+	path('current/', views.currenttodos, name='currenttodos'),
+
+CREATE A BASE TEMPLATE SO THAT WE CAN HAVE ONE COMMON THINGS TO BE REFLECTING IN ALL OUR html pages
+
+{% if user.is_authenticated %}
+
+# this means if the user is logged in or authenticated
+
+Logged in as {{ user.username }}
+
+# this will mention the user name who ever has logged in and below are all the web pages that we will create just know 
+# we want user to access them on all of our webpages
+
+<a href="{% url 'home' %}">Home</a>
+<a href="{% url 'createtodo' %}">Create</a>
+<a href="{% url 'currenttodos' %}">Current</a>
+<a href="{% url 'viewcompletedtodos' %}">Completed</a>
+
+<form action="{% url 'logoutuser' %}" method="POST">
+    {% csrf_token %}
+<button type="submit">Logout</button>
+</form>
+
+# if the user has logged in we want to give user an option to log out refer the logout function we are using action which will
+# send the user to a specific url in our case its logout url which will logout which the submit button has been used
+
+{% else %}
+<a href="{% url 'signupuser' %}">Sign up</a>
+
+# if the user is not authenticated then we give links to sign up and login below
+
+<a href="{% url 'loginuser' %}">Login</a>
+
+
+
+{% endif %}
+
+{% block content %}{% endblock %}
+
+VIEWS EXPLAINED BELOW
+
+	def currenttodos(request):
+    		todos_initialize = Todo.objects.filter(user=request.user, date_completed__isnull=True) # initialize only user wise not all hence filter does that for us
+    		return render(request, 'todo/currenttodos.html', {'todos': todos_initialize})
+
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
+
+	def logoutuser(request):
+    		if request.method == 'POST':
+	        logout(request)
+        	return redirect(home)
+# we only want someone to logout if the method is POST because when ever we load in url the browser will triger all the get methods
+# hence it will automatically logout
+# use logout method to logout and redirect method the home page
+
+URL -
+	path('logout/', views.logoutuser, name='logoutuser')
+
+
+LOGIN URL
+	path('login/', views.loginuser, name='loginuser')
+
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+
+VIEWS
+
+	def loginuser(request):
+    if request.method == 'GET':
+# check if the user wants to just access the url then we render the login page
+
+        return render(request, 'todo/loginuser.html', {'form': AuthenticationForm()})
+# we use AuthenticationForm method to login the user but we are just rendering the form
+
+    else:
+        user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
+# if the method is POST then we use authenticate method to check username and password to log in the signed up user
+
+        if user is None: # this means if the above user fails to authenticate username and password
+# above checks if the user logged in successfully or no. if not we render the same page and print an error 
+
+            return render(request, 'todo/loginuser.html', {'form': AuthenticationForm(), 'error': 'user name and password did not match'})
+        else:
+            login(request, user)
+            return redirect(currenttodos)
+
+# if authenticate executes successfully we redirect user to inside page which is currenttodos
+
+HTML ---
+
+{% extends 'todo/base.html' %}
+{% block content %}
+
+<h1>Login</h1>
+
+<h2>{{ error }}</h2>
+
+<form method="POST">
+    {% csrf_token %}
+{{ form.as_p }}
+# the above line of code helps us to print all the forms or fields under function which is username and password because we are logging in
+
+<button type="submit">Login</button>
+</form>
+
+{% endblock %}
+
+
+ TODO MODELS OR DB
+
+from django.db import models
+from django.contrib.auth.models import User
+
+# Create your models here.
+class Todo(models.Model):
+    title = models.CharField(max_length=100)
+    memo = models.TextField(blank=True)
+    created_date_time = models.DateTimeField(auto_now_add=True) # this records the date automatically and not editable
+    date_completed = models.DateTimeField(null=True, blank=True) # WE WANT TO SET THIS TO NULL AND BLANK SO THAT IF THIS FIELD HAS A DATE WE CAN MARK IT AS COMPLETED
+    important = models.BooleanField(default=False) # THIS IS A CHECK BOX
+    # link the user id to access only user specific models
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+# ForeignKey HELPS US TO STORE INFORMATION SPECIFICALLY TO THE USER WE PASS User to the parameter which is the unique user
+
+    def __str__(self):
+        return self.title
+
+ADMIN TO REFLECT THE MODELS
+
+from .models import Todo
+# Register your models here.
+
+# make the created date visible
+class TodoAdminReadonly(admin.ModelAdmin):
+    readonly_fields = ('created_date_time',)
+
+# WE HAVE CREATED ANOTHER CLASS SO THAT WE CAN SEE THE CREATED TODO DATE WHICH IS AUTOFILED NOT EDITABLE FIELD
+
+admin.site.register(Todo, TodoAdminReadonly)
+
+CREATE A TODO BY USING DB MODELS
+URL
+	path('create/', views.createtodo, name='createtodo')
+
+from .forms import TodoForms
+
+CREATE A SEPARATED PY FILE TO STORE CLASS
+
+	from django.forms import ModelForm
+	from .models import Todo
+
+	class TodoForms(ModelForm):
+    		class Meta: # initailize the sub class that we need
+        		model = Todo
+        		fields = ['title', 'memo', 'important']
+
+# INHERRITING FROM THOSE CLASSES AND META INITAILIZED AND WE INITAILIZED OUR MODELS DB CLASS WHICH IS TODO AND 
+# LIST OUT THE FIELD THAT WE NEED FROM THE DB
+
+VIEWS
+
+	def createtodo(request):
+   		 if request.method == 'GET':
+        		return render(request, 'todo/create.html', {'form': TodoForms}) # form is the context here we need to create our own form/context
+# IF THE USER IS VISITING WE PRINT OUT THE FIELDS ASSIGNED IN DICT FORM OUR CLASS
+
+    # what do we need to be saved from the user on the website
+    		else:
+            		form = TodoForms(request.POST) # if the user saves or posts the page
+            		save_without_user = form.save(commit=False) # we dont want to save before linking it to the user
+  		        save_without_user.user = request.user
+		        save_without_user.save() # now we commit the save and render the user to the current page
+            		return redirect(currenttodos)	
+
+
+HTML---
+
+{% extends 'todo/base.html' %}
+{% block content %}
+
+<h1>Create</h1>
+
+<h2>{{ error }}</h2>
+
+<form method="POST">
+    {% csrf_token %}
+{{ form.as_p }}
+# THIS WILL PRINT OUT ALL THE FIELDS WHICH WE USED IN FUNCTION
+
+<button type="submit">Save</button>
+</form>
+
+{% endblock %}
+
+
+WE WANT THE TODO OBJECTS TO BE VISIBLE ON OUR CURRENT PAGE SO ALREADY HAVE AN URL
+
+	path('current/', views.currenttodos, name='currenttodos')
+
+VIEWS
+	def currenttodos(request):
+    		todos_initialize = Todo.objects.filter(user=request.user, date_completed__isnull=True) # initialize only user wise not all hence filter does that for us
+# WE ONLY WANT TO VIEW TODOS WHICH AREN'T COMPLETED HENCE WE USE date_completed MODEL AND PASS IN CHECK FUNCTION SAY ITS NULL IF IT ISN'T IT WONT BE VISIBLE ON OUR PAGE   		
+
+		return render(request, 'todo/currenttodos.html', {'todos': todos_initialize})
+
+
+
+
+HTML
+
+{% extends 'todo/base.html' %}
+{% block content %}
+<br>
+TODOS
+<br>
+<br>
+<ul>
+    {% for todo in todos %}
+
+            <li>
+               <a href="{% url 'viewtodo'  todo.id %}"> <!-- # when we use pk=ids we need that key in the parameter-->
+                    {% if todo.important %}<b>{% endif %}
+                            {{ todo.title }}
+                    {% if todo.important %}</b>{% endif %}
+                    {% if todo.memo %}
+                            - {{ todo.memo }}
+                    {% endif %}
+                </a>
+            </li>
+    {% endfor %}
+</ul>
+{% endblock %}

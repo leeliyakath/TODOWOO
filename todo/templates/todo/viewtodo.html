@@ -1,0 +1,25 @@
+{% extends 'todo/base.html' %}
+
+{% block content %}
+<body style="background-color: #6CCA95">
+<br>
+<br>
+<br>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" style="background-color: #04AA6D; color:black; border-color:#04AA6D">Save</button>
+</form>
+
+<form method="POST" action="{% url 'completedtodo' todo_view.id %}">
+    {% csrf_token %}
+    <button type="submit" style="background-color: #04AA6D; color:black; border-color:#04AA6D">Complete</button>
+</form>
+
+<form method="POST" action="{% url 'deletedtodo' todo_view.id %}">
+    {% csrf_token %}
+    <button type="submit" style="background-color: #04AA6D; color:black; border-color:#04AA6D">Delete</button>
+</form>
+</body>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'todo/base.html' %}
+{% block content %}
+<style>
+            img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            }
+
+            p.a {
+                "Times New Roman", Times, serif;
+                }
+        </style>
+<body style="background-color: #6CCA95">
+<br>
+<br>
+{% load static %}
+{% if user.is_authenticated %}
+    <div>
+        <h2 style="text-align:center" class="a">Website Information</h2>
+        <p style="text-align:center" class="a">Hi, my name is <b>Syed Liyakath.</b><br>
+            I have created this small <b>TODO</b> beginner website to remind myself in future
+            how bad i was at creating websites.<br>
+            So that's me, i'll let you off to create your first <b>TODO</b> task.<br>
+            Thank you.
+        </p>
+        <img src="{% static 'todo/heart.png' %}" width="300">
+    </div>
+{% else %}
+<h1 style="{font-family:serif}">Do you have an account already?</h1>
+<a href="{% url 'loginuser' %}">Login</a>
+<h1 style={font-family:serif}>New user? Sign up below.</h1>
+<a href="{% url 'signupuser' %}">Sign up</a>
+{% endif%}
+</body>
+{% endblock %}
